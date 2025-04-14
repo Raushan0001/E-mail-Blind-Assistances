@@ -1,0 +1,186 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Compose Email</title>
+    <style>
+        body {
+            background: linear-gradient(120deg, #6a11cb, #2575fc);
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            color: white;
+            margin: 0;
+            padding: 0;
+        }
+        .container {
+            padding: 30px;
+            width: 100%;
+            max-width: 600px;
+            margin: 50px auto;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 10px;
+            box-shadow: 0px 4px 8px rgba(0, 0, 0, 0.2);
+        }
+        h2 {
+            text-align: center;
+            font-size: 30px;
+            margin-bottom: 20px;
+        }
+        input, textarea {
+            width: 100%;
+            padding: 12px;
+            margin: 12px 0;
+            border-radius: 5px;
+            border: 2px solid #fff;
+            background: rgba(255, 255, 255, 0.3);
+            color: white;
+            font-size: 16px;
+        }
+        button {
+            padding: 12px 20px;
+            background-color: #2575fc;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 16px;
+            width: 100%;
+        }
+        button:hover {
+            background-color: #1e5bb6;
+        }
+        .send-container {
+            margin-top: 20px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h2>Compose a New Email</h2>
+        <form action="/compose" method="POST" id="compose-form" onsubmit="return validateEmail()">
+            <label for="to">To:</label>
+            <input type="email" id="to" name="to" placeholder="Recipient Email" required>
+
+            <label for="subject">Subject:</label>
+            <input type="text" id="subject" name="subject" placeholder="Subject" required>
+
+            <label for="body">Body:</label>
+            <textarea name="body" id="body" rows="5" placeholder="Write your email..." required></textarea>
+
+            <div class="send-container">
+                <button type="submit" id="submit-btn">Send</button>
+            </div>
+        </form>
+    </div>
+
+    <script>
+        let bellSound = new Audio('/static/bell.mp3');
+
+        document.addEventListener('click', () => {
+            bellSound.play().catch(error => console.log("Autoplay blocked. Bell will play when triggered."));
+        }, { once: true });
+
+        const recognition = new (window.SpeechRecognition || window.webkitSpeechRecognition)();
+        recognition.lang = 'en-US';
+        recognition.interimResults = true;
+
+        let fields = ["to", "subject", "body", "submit-btn"];
+        let index = 0;
+        let confirmationReceived = false;
+
+        function startRecognition() {
+            if (index < fields.length) {
+                let targetField = document.getElementById(fields[index]);
+
+                if (targetField.id === "submit-btn") {
+                    confirmSubmission();
+                    return;
+                }
+
+                recognition.start();
+
+                setTimeout(() => {
+                    recognition.stop();
+                    bellSound.play(); 
+                    index++;
+                    startRecognition();
+                }, 20000);
+
+                recognition.onresult = (event) => {
+                    let transcript = event.results[0][0].transcript.toLowerCase().trim();
+
+                    // Fixing speech misinterpretations for email input
+                    transcript = transcript
+                        .replace(/\b(and the rate|at the rate|add the rate)\b/g, "@")  // '@'
+                        .replace(/\b(daught|dot dot|dot)\b/g, ".")  // Fix '.'
+                        .replace(/\bcom\b/g, ".com")  // Ensure ".com"
+                        .replace(/\bac\b/g, ".ac")  // Fix ".ac"
+                        .replace(/\bin\b/g, ".in")  // Fix ".in"
+                        .replace(/(\.\s*)+/g, ".")  // Prevent duplicate dots
+                        .replace(/\s+/g, "");  // Remove unnecessary spaces
+
+                    targetField.value = transcript;
+                };
+
+                recognition.onerror = (event) => {
+                    console.error("Speech recognition error: ", event.error);
+                };
+            }
+        }
+
+        function confirmSubmission() {
+            recognition.start();
+
+            setTimeout(() => {
+                recognition.stop();
+                bellSound.play();
+                if (!confirmationReceived) {
+                    confirmSubmission();
+                }
+            }, 20000);
+
+            recognition.onresult = (event) => {
+                let transcript = event.results[0][0].transcript.toLowerCase();
+                if (transcript.includes("send email")) {
+                    confirmationReceived = true;
+                    document.getElementById("compose-form").submit();
+                }
+            };
+        }
+
+        async function validateEmail() {
+            let email = document.getElementById("to").value.trim().toLowerCase();
+
+            // Allowed domains (College + Personal emails)
+            const allowedDomains = ["cutm.ac.in", "gmail.com", "yahoo.com", "outlook.com", "hotmail.com"];
+            
+            let emailDomain = email.split("@").pop();
+
+            // Check if domain is allowed
+            if (!allowedDomains.includes(emailDomain)) {
+                alert("Invalid email address! Only college and personal emails are allowed.");
+                return false;
+            }
+
+            // Backend validation (Checks if email exists)
+            let response = await fetch('/validate-email', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ email: email })
+            });
+
+            let result = await response.json();
+            if (!result.valid) {
+                alert("The email address does not exist or cannot receive emails.");
+                return false;
+            }
+
+            return true; // Allow form submission
+        }
+
+        window.onload = () => {
+            startRecognition();
+        };
+    </script>
+</body>
+</html>

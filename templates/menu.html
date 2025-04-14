@@ -1,0 +1,153 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Voice Email Assistant</title>
+    <style>
+        /* Background and Layout */
+        body {
+            font-family: 'Arial', sans-serif;
+            background: linear-gradient(135deg, #2c3e50, #4ca1af);
+            color: white;
+            text-align: center;
+            padding: 50px;
+            margin: 0;
+        }
+
+        /* Navigation Menu */
+        nav {
+            background: rgba(255, 255, 255, 0.2);
+            padding: 15px;
+            border-radius: 12px;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);
+            display: inline-block;
+            animation: fadeIn 1s ease-in-out;
+        }
+
+        nav ul {
+            list-style: none;
+            padding: 0;
+            margin: 0;
+        }
+
+        nav ul li {
+            display: inline;
+            margin: 15px;
+        }
+
+        nav ul li a {
+            text-decoration: none;
+            color: white;
+            font-size: 18px;
+            background: rgba(255, 255, 255, 0.3);
+            padding: 14px 20px;
+            border-radius: 8px;
+            transition: all 0.3s ease;
+        }
+
+        nav ul li a:hover {
+            background: rgba(255, 255, 255, 0.6);
+            transform: scale(1.1);
+        }
+
+        /* Voice Indicator */
+        #status {
+            font-size: 20px;
+            margin-top: 20px;
+            color: yellow;
+        }
+
+        /* Animations */
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(-20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+    </style>
+</head>
+<body>
+
+    <nav>
+        <ul>
+            <li><a href="{{ url_for('inbox') }}">Inbox</a></li>
+            <li><a href="{{ url_for('compose') }}">Compose</a></li>
+            <li><a href="{{ url_for('sent') }}">Sent</a></li>
+            <li><a href="{{ url_for('logout') }}">Logout</a></li>
+        </ul>
+    </nav>
+
+    <h2>Speak a Command (e.g., "Go to inbox", "Open compose")</h2>
+    <p id="status">Listening...</p>
+
+    <script>
+        // Check if browser supports Speech Recognition
+        window.SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+
+        if (!window.SpeechRecognition) {
+            document.getElementById("status").innerText = "Speech recognition not supported in this browser.";
+        } else {
+            const recognition = new SpeechRecognition();
+            recognition.lang = 'en-US';
+            recognition.continuous = true; // Keep listening
+            recognition.interimResults = false;
+            recognition.start();
+
+            recognition.onstart = function () {
+                console.log("Voice recognition started...");
+                document.getElementById("status").innerText = "Listening...";
+            };
+
+            recognition.onresult = function (event) {
+                const transcript = event.results[event.results.length - 1][0].transcript.toLowerCase().trim();
+                console.log("You said: " + transcript);
+                processVoiceCommand(transcript);
+            };
+
+            recognition.onerror = function (event) {
+                console.error("Speech recognition error:", event.error);
+                document.getElementById("status").innerText = "Error in voice recognition.";
+                restartRecognition(); // Restart listening
+            };
+
+            function processVoiceCommand(command) {
+                // Command mapping with flexible matching
+                if (command.includes("inbox")) {
+                    navigateTo("Inbox", "{{ url_for('inbox') }}");
+                } else if (command.includes("compose")) {
+                    navigateTo("Compose", "{{ url_for('compose') }}");
+                } else if (command.includes("sent")) {
+                    navigateTo("Sent", "{{ url_for('sent') }}");
+                } else if (command.includes("logout") || command.includes("log out")) {
+                    navigateTo("Logout", "{{ url_for('logout') }}");
+                } else {
+                    console.log("Command not recognized: " + command);
+                    restartRecognition(); // Restart listening
+                }
+            }
+
+            function navigateTo(page, url) {
+                speak(`Navigating to ${page}`);
+                setTimeout(() => {
+                    window.location.href = url;
+                }, 1000);
+            }
+
+            function speak(text) {
+                const utterance = new SpeechSynthesisUtterance(text);
+                utterance.lang = 'en-US';
+                utterance.rate = 1.0;
+                utterance.pitch = 1.1;
+                utterance.volume = 1.0;
+                window.speechSynthesis.speak(utterance);
+            }
+
+            function restartRecognition() {
+                setTimeout(() => {
+                    recognition.start(); // Restart recognition after 2 seconds
+                }, 2000);
+            }
+        }
+    </script>
+
+</body>
+</html>

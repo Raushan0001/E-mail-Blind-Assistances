@@ -1,0 +1,53 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sent Emails</title>
+    <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/css/bootstrap.min.css">
+    <style>
+        body {
+            background-color: #e3f2fd; /* Light blue background color */
+        }
+        .container {
+            margin-top: 50px;
+        }
+        .table {
+            background-color: #ffffff; /* White background for the table */
+        }
+        h2 {
+            color: #333;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h2>Sent Emails</h2>
+        <table class="table table-bordered">
+            <thead>
+                <tr>
+                    <th>To</th>
+                    <th>Subject</th>
+                    <th>Body</th>
+                    <th>Sent Time</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for email in sent_emails %}
+                <tr>
+                    <td>{{ email.to }}</td>
+                    <td>{{ email.subject }}</td>
+                    <td>{{ email.body[:50] }}...</td> <!-- Display first 50 characters -->
+                    <td>{{ email.sent_time }}</td>
+                </tr>
+                {% else %}
+                <tr>
+                    <td colspan="4">No emails sent yet.</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+        <a href="{{ url_for('menu') }}" class="btn btn-primary">Back to Menu</a>
+    </div>
+</body>
+</html>
