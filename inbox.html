@@ -1,0 +1,105 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Email to Audio</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #e0f7fa; /* Light blue background */
+            margin: 0;
+            padding: 0;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+        }
+        .container {
+            background-color: #fff;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+            max-width: 800px;
+            width: 100%;
+        }
+        h1 {
+            text-align: center;
+            color: #333;
+            font-size: 2em;
+            margin-bottom: 20px;
+        }
+        ul {
+            list-style-type: none;
+            padding: 0;
+        }
+        li {
+            background-color: #f9f9f9;
+            margin-bottom: 15px;
+            padding: 15px;
+            border-left: 5px solid #007BFF;
+            border-radius: 4px;
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+        }
+        li h3 {
+            color: #007BFF;
+            font-size: 1.2em;
+            margin: 0;
+        }
+        li p {
+            margin-top: 10px;
+            font-size: 1em;
+            line-height: 1.6;
+        }
+        audio {
+            display: block;
+            margin: 20px auto;
+            width: 100%;
+            max-width: 400px;
+        }
+        a {
+            display: inline-block;
+            margin-top: 10px;
+            color: #007BFF;
+            text-decoration: none;
+            font-weight: bold;
+        }
+        a:hover {
+            text-decoration: underline;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Important Emails</h1>
+        
+        {% if emails %}
+            <ul>
+                {% for email in emails %}
+                    <li>
+                        <h3>Subject: {{ email.subject }}</h3>
+                        <p>{{ email.body }}</p>
+                        <audio id="email_audio_{{ loop.index }}" controls>
+                            <source src="{{ url_for('play_audio', filename=email.audio_file) }}" type="audio/mpeg">
+                            Your browser does not support the audio element.
+                        </audio>
+                        <a href="{{ url_for('download_audio', filename=email.audio_file) }}">Download Audio</a>
+                    </li>
+                {% endfor %}
+            </ul>
+        {% else %}
+            <p>No new emails found.</p>
+        {% endif %}
+    </div>
+
+    <script>
+        // Automatically play the first email's audio
+        document.addEventListener("DOMContentLoaded", function() {
+            const firstAudio = document.querySelector('audio');
+            if (firstAudio) {
+                firstAudio.play();
+            }
+        });
+    </script>
+</body>
+</html>
